@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Find your testset</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <style>
+    
+  </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+  <div class="alert alert-danger" id="ans">
+  </div>
+  <div class="container">  
+    <div id="myjumbotron" class="jumbotron mt-3">
+      <h1>Check with testset</h1>
+      <label for="word">upload an image:</label>
+      <div class="input-group">  
+        <input type="text" class="form-control" id="word" placeholder="e.g., 好">
+        <span class="input-group-btn">
+          <button class="btn btn-success" id="getdata">
+            <span class="glyphicon glyphicon-wrench"></span> Get Wordnet Data
+          </button>
+        </span>
+      </div>
+      <hr>
+      <div id="res" style="display: none;">
+        <label>You can click the red dot to get data of that word</label>
+      </div>
+    </div>
+  </div>
+  <script>
+    const width = $("#myjumbotron").width();
+    const height = 400;
+    var svg = null;
+    var force = null;
+
+    function showErrorMsg(xhr) {
+      $('#ans').text(`[${xhr.status}] ${xhr.responseText}`);
+      $('#ans').show()
+    }
+    
+    // function getWordJson() {
+    //   const urlTarget = window.location.protocol + "//" + window.location.host + '/word/' + $('#word').val();
+    
+    //   $.ajax({
+    //     type: 'GET',
+    //     dataType: 'json',
+    //     url: urlTarget,
+    //     success: function(data) {
+    //       $("#res").show();
+    //       $('#json_res').html(JSON.stringify(data, undefined, 2));
+    //     },
+    //     error: function(xhr, textStatus, errorThrown) {
+    //       showErrorMsg(xhr);
+    //     },
+    //   });
+    // }
+    
+    // function getWordSense() {
+    //   const urlTarget = window.location.protocol + "//" + window.location.host + '/network/' + $('#word').val();
+    //   d3.json(urlTarget, function(json) {
+    //     force.nodes(json.nodes)
+    //       .links(json.links)
+    //       .start();
+
+    //     var link = svg.selectAll(".link")
+    //       .data(json.links)
+    //       .enter()
+    //       .append("line")
+    //       .attr("class", "link")
+    //       .style("stroke-width", function(d) { return Math.sqrt(d.weight); });
+
+    //     var node = svg.selectAll(".node")
+    //       .data(json.nodes)
+    //       .enter()
+    //       .append("g")
+    //       .attr("class", "node")
+    //       .call(force.drag);
+
+    //     node.append("circle")
+    //       .attr("r","5")
+    //       .style("fill", function(d) { return d.color })
+    //       .on("click", function(d) { 
+    //         if (d.type == "word") {
+    //           $('#word').val(d.name);
+    //           getWordnet();
+    //         }  
+    //       });
+
+    //     node.append("text")
+    //       .attr("dx", 12)
+    //       .attr("dy", ".35em")
+    //       .text(function(d) { return d.name });
+
+    //     force.on("tick", function() {
+    //       link
+    //         .attr("x1", function(d) { return d.source.x; })
+    //         .attr("y1", function(d) { return d.source.y; })
+    //         .attr("x2", function(d) { return d.target.x; })
+    //         .attr("y2", function(d) { return d.target.y; });
+
+    //       node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+    //     });
+    //   });
+    // }
+
+    // function getPcaGraph() {
+    //   const urlTarget = window.location.protocol + "//" + window.location.host + '/tbl/count/' + tbl;
+    
+    //   $.ajax({
+    //     type: 'GET',
+    //     dataType: 'json',
+    //     url: urlTarget,
+    //     success: function(data) {
+    //       console.log(data);
+    //     },
+    //     error: function(xhr, textStatus, errorThrown) {
+    //       showErrorMsg(xhr);
+    //     },
+    //   });
+    // }
+
+    // function insertThead(ele, parent) {
+    //   var tr = $('<tr>');
+    //   for (var key in ele) {          
+    //     tr.append($('<td>').text(key));
+    //   }
+    //   tr.appendTo(parent);
+    // }
+
+    // function insertTbody(ele, parent) {
+    //   var tr = $('<tr>');  
+    //   for (const [key, value] of Object.entries(ele)) {
+    //     res = (value)? value : "null";
+    //     tr.append($(`<td>`).text(res));
+    //   }
+    //   tr.appendTo(parent);
+    // }
+
+    // function getTableRow(tbl, limit, offset) {
+    //   const urlTarget = window.location.protocol + "//" + window.location.host + '/tbl/rows/' + `${tbl}/${limit}/${offset}`;
+    
+    //   $.ajax({
+    //     type: 'GET',
+    //     dataType: 'json',
+    //     url: urlTarget,
+    //     success: function(data) {
+    //       $("<h2>").text(tbl).appendTo("#tables");
+    //       var table = $('<table border=1>');
+    //       var thead = $('<thead>');
+    //       var tbody = $('<tbody>');
+    //       $.each(JSON.parse(data), function(idx, ele) {
+    //         if (idx == 0) {
+    //           insertThead(ele, thead);
+    //         }
+    //         insertTbody(ele, tbody);
+    //       });
+    //       table.append(thead);
+    //       table.append(tbody);
+    //       table.appendTo("#tables")
+    //     },
+    //     error: function(xhr, textStatus, errorThrown) {
+    //       showErrorMsg(xhr);
+    //     },
+    //   });
+    // }
+
+
+    $(document).ready(function() {
+      $('#ans').hide();
+      $('#getdata').on('click', getPcaGraph);
+    });
+  </script>
+</body>
+</html>

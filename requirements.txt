@@ -1,6 +1,0 @@
-tensorflow==2.6.5
-keras
-sklearn
-numpy
-pillow
-matplotlib
