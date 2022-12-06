@@ -9,13 +9,21 @@ from django.http import JsonResponse, HttpResponse
 from django.conf import settings
 from tensorflow.keras.applications.resnet50 import ResNet50
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
-# from matplotlib.font_manager import FontProperties
-# from sklearn.decomposition import PCA
-# import matplotlib.pyplot as plt
+from tensorflow.keras.applications.resnet50 import preprocess_input
 import numpy as np
+from sklearn.decomposition import PCA
 
 model = ResNet50(weights='imagenet')
+vectors = []
+filenames = []
+
+def _do_pca():
+    if len(vectors) > 1:
+        pca = PCA(n_components=2)
+        X = pca.fit_transform(np.array(vectors))
+        return JsonResponse({"filenames": filenames, "vectors": X.tolist()}, safe=False)
+    else:
+        return JsonResponse({"filenames": filenames, "vectors": []}, safe=False)
 
 @require_http_methods(["GET"])
 def index(request):
@@ -32,20 +40,64 @@ def get_vector(request):
 
             img = image.load_img(os.path.join(settings.MEDIA_ROOT, filename), target_size=(224, 224))
             
-            # # image.array_to_img(img).show()
-
             x = image.img_to_array(img)
             x = np.expand_dims(x, axis=0)
             x = preprocess_input(x)
 
             preds = model.predict(x)
-            print(preds)
-            # # print('Predicted:', decode_predictions(preds, top=3)[0])
-
-            # filename, _ =os.path.splitext(os.path.basename(fp))
-            # print(filename)
-
-            return JsonResponse({"name": filename, "vector": preds.tolist()}, safe=False)
+            
+            filenames.append(filename)
+            vectors.append(preds[0])
+            
+            return _do_pca()
+        else:
+            return JsonResponse({"msg": "file not exist"}, safe=False, status=400)
     except:
         print(traceback.format_exc())
         return JsonResponse({"msg": "Exception thrown"}, safe=False, status=500)
+
+@require_http_methods(["GET"])
+def get_pca(request):
+    global vectors
+    global filenames
+
+    try:
+        tmp = []
+        fn = []
+        types = (f"{settings.MEDIA_ROOT}/*.jpg", f"{settings.MEDIA_ROOT}/*.png", f"{settings.MEDIA_ROOT}/*.jpeg") 
+        files_grabbed = []
+        for t in types:
+            files_grabbed.extend(glob.glob(t))
+
+        for fp in files_grabbed:
+            print(fp)
+            img = image.load_img(fp, target_size=(224, 224))
+            
+            x = image.img_to_array(img)
+            x = np.expand_dims(x, axis=0)
+            x = preprocess_input(x)
+
+            preds = model.predict(x)
+            
+            filename, file_extension =os.path.splitext(os.path.basename(fp))
+            
+            fn.append(filename + file_extension)
+            tmp.append(preds[0])
+    
+        vectors = tmp
+        filenames = fn
+
+        return _do_pca()
+    except:
+        print(traceback.format_exc())
+        return JsonResponse({"msg": "Exception thrown"}, safe=False, status=500)
+
+
+@require_http_methods(["GET"])
+def get_file(request):
+    try:
+        return JsonResponse({"msg": "file not exist"}, safe=False, status=400)
+    except:
+        print(traceback.format_exc())
+        return JsonResponse({"msg": "Exception thrown"}, safe=False, status=500)
+

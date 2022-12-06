@@ -5,9 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-  <style>
-    
-  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
@@ -29,84 +27,196 @@
         </span>
       </div>
       <hr>
-      <div id="res" style="display: none;">
-        <label>You can click the red dot to get data of that word</label>
+      <div>
+        <canvas id="pca">
+        </canvas>
       </div>
     </div>
   </div>
   <script>
-    const width = $("#myjumbotron").width();
-    const height = 400;
+    const getOrCreateTooltip = (chart) => {
+      let tooltipEl = chart.canvas.parentNode.querySelector('div');
+
+      if (!tooltipEl) {
+        tooltipEl = document.createElement('div');
+        tooltipEl.style.background = 'rgba(0, 0, 0, 0.7)';
+        tooltipEl.style.borderRadius = '3px';
+        tooltipEl.style.color = 'white';
+        tooltipEl.style.opacity = 1;
+        tooltipEl.style.pointerEvents = 'none';
+        tooltipEl.style.position = 'absolute';
+        tooltipEl.style.transform = 'translate(-50%, 0)';
+        tooltipEl.style.transition = 'all .1s ease';
+
+        const table = document.createElement('table');
+        table.style.margin = '0px';
+
+        tooltipEl.appendChild(table);
+        chart.canvas.parentNode.appendChild(tooltipEl);
+      }
+
+      return tooltipEl;
+    };
+
+    const externalTooltipHandler = (context) => {
+      const {chart, tooltip} = context;
+      const tooltipEl = getOrCreateTooltip(chart);
+
+      // Hide if no tooltip
+      if (tooltip.opacity === 0) {
+        tooltipEl.style.opacity = 0;
+        return;
+      }
+
+      if (tooltip.body) {
+
+        // const titleLines = tooltip.title || [];
+        const bodyLines = tooltip.body.map(b => b.lines);
+        const tableHead = document.createElement('thead');
+
+        // titleLines.forEach(title => {
+        //   const tr = document.createElement('tr');
+        //   tr.style.borderWidth = 0;
+
+        //   const th = document.createElement('th');
+        //   th.style.borderWidth = 0;
+        //   const text = document.createTextNode(title);
+
+        //   th.appendChild(text);
+        //   tr.appendChild(th);
+        //   tableHead.appendChild(tr);
+        // });
+
+        const tableBody = document.createElement('tbody');
+        tooltip.dataPoints.forEach((body, i) => {
+          const colors = tooltip.labelColors[i];
+
+          const span = document.createElement('span');
+          span.style.background = colors.backgroundColor;
+          span.style.borderColor = colors.borderColor;
+          span.style.borderWidth = '2px';
+          span.style.marginRight = '10px';
+          span.style.height = '10px';
+          span.style.width = '10px';
+          span.style.display = 'inline-block';
+
+          const tr = document.createElement('tr');
+          tr.style.backgroundColor = 'inherit';
+          tr.style.borderWidth = 0;
+
+          const td = document.createElement('td');
+          td.style.borderWidth = 0;
+
+          const div = document.createElement('div');
+          const text = document.createTextNode(body.dataset.label[body.dataIndex]);
+          const img = document.createElement('img');
+          const urlTarget = window.location.protocol + "//" + window.location.host + '/media/' + body.dataset.label[body.dataIndex];
+          img.src = urlTarget;
+          
+
+          td.appendChild(span);
+          div.appendChild(text);
+          td.appendChild(div);
+          td.appendChild(img)
+          tr.appendChild(td);
+          tableBody.appendChild(tr);
+        });
+
+        const tableRoot = tooltipEl.querySelector('table');
+
+        // Remove old children
+        while (tableRoot.firstChild) {
+          tableRoot.firstChild.remove();
+        }
+
+        // Add new children
+        tableRoot.appendChild(tableHead);
+        tableRoot.appendChild(tableBody);
+      }
+
+      const {offsetLeft: positionX, offsetTop: positionY} = chart.canvas;
+
+      // Display, position, and set styles for font
+      tooltipEl.style.opacity = 1;
+      tooltipEl.style.left = positionX + tooltip.caretX + 'px';
+      tooltipEl.style.top = positionY + tooltip.caretY + 'px';
+      tooltipEl.style.font = tooltip.options.bodyFont.string;
+      tooltipEl.style.padding = tooltip.options.padding + 'px ' + tooltip.options.padding + 'px';
+    };
+    
+
+    let chart = new Chart($("#pca"), {
+      type: 'scatter',
+      data: {
+        labels: "image",
+        datasets: [{
+          label: [],
+          data: [],
+          backgroundColor: '#337ab7',
+          borderColor: '#337ab7',
+          borderWidth: 1,
+          fill: false,
+          pointRadius: 8,
+          pointHoverRadius: 8
+        }]
+      },
+      options: {
+        // tooltips: {
+        //   callbacks: {
+        //     label: function(tooltipItem, data) {
+        //       const label = data.labels[tooltipItem.index];
+        //       return label;
+        //     }
+        //   }
+        // }
+        plugins: {
+          tooltip: {
+            enabled: false,
+            position: 'nearest',
+            external: externalTooltipHandler
+          }
+        }
+      }
+    });
     
     function showErrorMsg(xhr) {
       $('#ans').text(`[${xhr.status}] ${xhr.responseText}`);
       $('#ans').show()
     }
     
-    // function getWordJson() {
-    //   const urlTarget = window.location.protocol + "//" + window.location.host + '/word/' + $('#word').val();
+    function getPca() {
+      const urlTarget = window.location.protocol + "//" + window.location.host + '/pca/get/';
     
-    //   $.ajax({
-    //     type: 'GET',
-    //     dataType: 'json',
-    //     url: urlTarget,
-    //     success: function(data) {
-    //       $("#res").show();
-    //       $('#json_res').html(JSON.stringify(data, undefined, 2));
-    //     },
-    //     error: function(xhr, textStatus, errorThrown) {
-    //       showErrorMsg(xhr);
-    //     },
-    //   });
-    // }
-    
-    // function getWordSense() {
-    //   const urlTarget = window.location.protocol + "//" + window.location.host + '/network/' + $('#word').val();
-    //   d3.json(urlTarget, function(json) {
-    //     force.nodes(json.nodes)
-    //       .links(json.links)
-    //       .start();
+      $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: urlTarget,
+        success: function(data) {
+          console.log(data)
+          if (data.vectors.length > 1) {
+            let res = [];
+            let filenames = [];
+            for (let p=0; p<data.vectors.length; ++p) {
+              res.push({
+                "x": data.vectors[p][0],
+                "y": data.vectors[p][1]
+              });
 
-    //     var link = svg.selectAll(".link")
-    //       .data(json.links)
-    //       .enter()
-    //       .append("line")
-    //       .attr("class", "link")
-    //       .style("stroke-width", function(d) { return Math.sqrt(d.weight); });
+              filenames.push(data.filenames[p])
+            }
 
-    //     var node = svg.selectAll(".node")
-    //       .data(json.nodes)
-    //       .enter()
-    //       .append("g")
-    //       .attr("class", "node")
-    //       .call(force.drag);
-
-    //     node.append("circle")
-    //       .attr("r","5")
-    //       .style("fill", function(d) { return d.color })
-    //       .on("click", function(d) { 
-    //         if (d.type == "word") {
-    //           $('#word').val(d.name);
-    //           getWordnet();
-    //         }  
-    //       });
-
-    //     node.append("text")
-    //       .attr("dx", 12)
-    //       .attr("dy", ".35em")
-    //       .text(function(d) { return d.name });
-
-    //     force.on("tick", function() {
-    //       link
-    //         .attr("x1", function(d) { return d.source.x; })
-    //         .attr("y1", function(d) { return d.source.y; })
-    //         .attr("x2", function(d) { return d.target.x; })
-    //         .attr("y2", function(d) { return d.target.y; });
-
-    //       node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
-    //     });
-    //   });
-    // }
+            chart.data.datasets[0].label = filenames;
+            chart.data.datasets.forEach((dataset) => {
+              dataset.data = res;
+            });
+            chart.update();
+          }
+        },
+        error: function(xhr, textStatus, errorThrown) {
+          showErrorMsg(xhr);
+        },
+      });
+    }
 
     function getVector() {
       const urlTarget = window.location.protocol + "//" + window.location.host + '/vector/get/';
@@ -125,7 +235,22 @@
         data: form_data,
         url: urlTarget,
         success: function(data) {
-          console.log(data);
+          console.log(data)
+          if (data.vectors.length > 1) {
+            let res = [];
+            for (let p=0; p<data.vectors.length; ++p) {
+              res.push({
+                "name": data.filenames[p],
+                "x": data.vectors[p][0],
+                "y": data.vectors[p][1]
+              });
+            }
+
+            chart.data.datasets.forEach((dataset) => {
+              dataset.data = res;
+            });
+            chart.update();
+          }
         },
         error: function(xhr, textStatus, errorThrown) {
           showErrorMsg(xhr);
@@ -133,55 +258,11 @@
       });
     }
 
-    // function insertThead(ele, parent) {
-    //   var tr = $('<tr>');
-    //   for (var key in ele) {          
-    //     tr.append($('<td>').text(key));
-    //   }
-    //   tr.appendTo(parent);
-    // }
-
-    // function insertTbody(ele, parent) {
-    //   var tr = $('<tr>');  
-    //   for (const [key, value] of Object.entries(ele)) {
-    //     res = (value)? value : "null";
-    //     tr.append($(`<td>`).text(res));
-    //   }
-    //   tr.appendTo(parent);
-    // }
-
-    // function getTableRow(tbl, limit, offset) {
-    //   const urlTarget = window.location.protocol + "//" + window.location.host + '/tbl/rows/' + `${tbl}/${limit}/${offset}`;
-    
-    //   $.ajax({
-    //     type: 'GET',
-    //     dataType: 'json',
-    //     url: urlTarget,
-    //     success: function(data) {
-    //       $("<h2>").text(tbl).appendTo("#tables");
-    //       var table = $('<table border=1>');
-    //       var thead = $('<thead>');
-    //       var tbody = $('<tbody>');
-    //       $.each(JSON.parse(data), function(idx, ele) {
-    //         if (idx == 0) {
-    //           insertThead(ele, thead);
-    //         }
-    //         insertTbody(ele, tbody);
-    //       });
-    //       table.append(thead);
-    //       table.append(tbody);
-    //       table.appendTo("#tables")
-    //     },
-    //     error: function(xhr, textStatus, errorThrown) {
-    //       showErrorMsg(xhr);
-    //     },
-    //   });
-    // }
-
-
     $(document).ready(function() {
       $('#ans').hide();
       $('#getdata').on('click', getVector);
+
+      getPca();
     });
   </script>
 </body>

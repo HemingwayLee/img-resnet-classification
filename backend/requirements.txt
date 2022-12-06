@@ -3,7 +3,7 @@ psycopg2-binary==2.8.4
 python-dotenv==0.12.0
 tensorflow==2.6.5
 keras
-sklearn
+scikit-learn
 numpy
 pillow
 matplotlib

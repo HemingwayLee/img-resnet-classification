@@ -16,8 +16,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from myapp import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', views.index),
-    path('vector/get/', views.get_vector)
-]
+    path('vector/get/', views.get_vector),
+    path('file/get/', views.get_file),
+    path('pca/get/', views.get_pca),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
