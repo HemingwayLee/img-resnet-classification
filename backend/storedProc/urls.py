@@ -18,5 +18,6 @@ from django.urls import path
 from myapp import views
 
 urlpatterns = [
-    path('', views.index)
+    path('', views.index),
+    path('vector/get/', views.get_vector)
 ]

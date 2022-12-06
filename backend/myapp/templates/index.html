@@ -18,11 +18,13 @@
     <div id="myjumbotron" class="jumbotron mt-3">
       <h1>Check with testset</h1>
       <label for="word">upload an image:</label>
+      <input id="myfile" name="myfile" type="file"/>
+      <label for="word">input its ground truth:</label>
       <div class="input-group">  
-        <input type="text" class="form-control" id="word" placeholder="e.g., 好">
+        <input type="text" class="form-control" id="word">
         <span class="input-group-btn">
           <button class="btn btn-success" id="getdata">
-            <span class="glyphicon glyphicon-wrench"></span> Get Wordnet Data
+            <span class="glyphicon glyphicon-wrench"></span> Get vector
           </button>
         </span>
       </div>
@@ -35,9 +37,7 @@
   <script>
     const width = $("#myjumbotron").width();
     const height = 400;
-    var svg = null;
-    var force = null;
-
+    
     function showErrorMsg(xhr) {
       $('#ans').text(`[${xhr.status}] ${xhr.responseText}`);
       $('#ans').show()
@@ -108,21 +108,30 @@
     //   });
     // }
 
-    // function getPcaGraph() {
-    //   const urlTarget = window.location.protocol + "//" + window.location.host + '/tbl/count/' + tbl;
+    function getVector() {
+      const urlTarget = window.location.protocol + "//" + window.location.host + '/vector/get/';
     
-    //   $.ajax({
-    //     type: 'GET',
-    //     dataType: 'json',
-    //     url: urlTarget,
-    //     success: function(data) {
-    //       console.log(data);
-    //     },
-    //     error: function(xhr, textStatus, errorThrown) {
-    //       showErrorMsg(xhr);
-    //     },
-    //   });
-    // }
+      var file_data = $("#myfile").prop("files")[0]; 
+      var form_data = new FormData(); 
+      form_data.append("myfile", file_data)
+      form_data.append("word", $('#word').val())
+
+      $.ajax({
+        type: 'POST',
+        dataType: 'json',
+        processData: false, // important
+        contentType: false, // important
+        headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        data: form_data,
+        url: urlTarget,
+        success: function(data) {
+          console.log(data);
+        },
+        error: function(xhr, textStatus, errorThrown) {
+          showErrorMsg(xhr);
+        },
+      });
+    }
 
     // function insertThead(ele, parent) {
     //   var tr = $('<tr>');
@@ -172,7 +181,7 @@
 
     $(document).ready(function() {
       $('#ans').hide();
-      $('#getdata').on('click', getPcaGraph);
+      $('#getdata').on('click', getVector);
     });
   </script>
 </body>
